@@ -1,0 +1,84 @@
+Sub ProcessAndSaveShipments()
+
+    Dim wsRaw As Worksheet, wsGrouped As Worksheet
+    Dim DesktopPath As String, FileName As String
+    Dim NewWB As Workbook
+    Dim tbl As ListObject
+    Dim LastRow As Long
+    
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    Set wsRaw = ThisWorkbook.Sheets("Raw Data")
+    Set wsGrouped = ThisWorkbook.Sheets("Grouped Gates")
+    
+    ' Clear old raw data (keep headers)
+    LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
+    If LastRow > 2 Then wsRaw.Rows("3:" & LastRow).ClearContents
+    
+    ' Paste from clipboard
+    On Error Resume Next
+    wsRaw.Range("A2").PasteSpecial xlPasteAll
+    If Err.Number <> 0 Then
+        MsgBox "No data copied to clipboard!" & vbCrLf & "Copy your raw data first, then click START.", vbCritical
+        GoTo CleanUp
+    End If
+    On Error GoTo 0
+    
+    ' Create/refresh Table
+    On Error Resume Next
+    Set tbl = wsRaw.ListObjects(1)
+    On Error GoTo 0
+    If tbl Is Nothing Then
+        LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
+        If LastRow >= 2 Then
+            wsRaw.Range("A2").CurrentRegion.Select
+            Set tbl = wsRaw.ListObjects.Add(xlSrcRange, Selection, , xlYes)
+            tbl.Name = "RawDataTable"
+        End If
+    Else
+        tbl.Resize tbl.Range
+    End If
+    
+    ' Refresh Power Query
+    ThisWorkbook.RefreshAll
+    Application.Wait (Now + TimeValue("0:00:03"))
+    
+    ' Check if Grouped Gates has data
+    If Application.WorksheetFunction.CountA(wsGrouped.Cells) < 5 Then
+        MsgBox "Grouped Gates sheet is empty or broken." & vbCrLf & "Please rebuild the Power Query first (see instructions).", vbCritical
+        GoTo CleanUp
+    End If
+    
+    ' Copy result as values to new file
+    wsGrouped.Cells.Copy
+    Set NewWB = Workbooks.Add(xlWBATWorksheet)
+    
+    With NewWB.Sheets(1)
+        .Range("A1").PasteSpecial xlPasteValues
+        .Range("A1").PasteSpecial xlPasteFormats
+        .Columns.AutoFit
+    End With
+    
+    Application.CutCopyMode = False
+    
+    ' Save to Desktop
+    DesktopPath = CreateObject("WScript.Shell").SpecialFolders("Desktop") & "\"
+    FileName = "Shipments_" & Format(Now, "yyyymmdd_hhmm") & ".xlsx"
+    
+    NewWB.SaveAs DesktopPath & FileName, FileFormat:=xlOpenXMLWorkbook
+    NewWB.Close False
+    
+    ' Reset Raw Data
+    LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
+    If LastRow > 2 Then wsRaw.Rows("3:" & LastRow).ClearContents
+    
+    MsgBox "✅ Success!" & vbCrLf & vbCrLf & _
+           "File saved to Desktop:" & vbCrLf & FileName & vbCrLf & vbCrLf & _
+           "Ready for next data.", vbInformation, "Done"
+
+CleanUp:
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+
+End Sub
