@@ -1,4 +1,3 @@
-
 Sub ProcessAndSaveShipments()
 
     Dim wsRaw As Worksheet, wsGrouped As Worksheet
@@ -13,24 +12,26 @@ Sub ProcessAndSaveShipments()
     Set wsRaw = ThisWorkbook.Sheets("Raw Data")
     Set wsGrouped = ThisWorkbook.Sheets("Grouped Gates")
     
-    ' === CLEAR OLD RAW DATA (keep headers in row 2) ===
+    ' Clear old raw data (keep headers in row 2)
     LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
     If LastRow > 2 Then
         wsRaw.Rows("3:" & LastRow).ClearContents
     End If
     
-    ' === PASTE THE COPIED DATA STARTING AT A2 (your current layout) ===
-    wsRaw.Activate
-    wsRaw.Range("A2").Select          ' This is where your headers and data start
-    wsRaw.Paste                       ' Pastes whatever is in your clipboard
+    ' Paste data from clipboard at A2
+    On Error Resume Next
+    wsRaw.Range("A2").PasteSpecial xlPasteAll
+    If Err.Number <> 0 Then
+        MsgBox "No data in clipboard! Copy your raw data first, then click START.", vbCritical
+        GoTo CleanUp
+    End If
+    On Error GoTo 0
     
-    ' === MAKE SURE IT'S AN EXCEL TABLE (Power Query source) ===
+    ' Create/refresh Excel Table
     On Error Resume Next
     Set tbl = wsRaw.ListObjects(1)
     On Error GoTo 0
-    
     If tbl Is Nothing Then
-        ' Create table if it doesn't exist yet
         LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
         If LastRow >= 2 Then
             wsRaw.Range("A2").CurrentRegion.Select
@@ -38,47 +39,44 @@ Sub ProcessAndSaveShipments()
             tbl.Name = "RawDataTable"
         End If
     Else
-        ' Refresh the table range
         tbl.Resize tbl.Range
     End If
     
-    ' === REFRESH THE POWER QUERY ===
+    ' Refresh Power Query
     ThisWorkbook.RefreshAll
+    Application.Wait (Now + TimeValue("0:00:03"))   ' longer wait
     
-    ' Small delay to let refresh finish
-    Application.Wait (Now + TimeValue("0:00:02"))
-    
-    ' === COPY GROUPED RESULT AS VALUES ONLY TO NEW FILE ===
+    ' Copy grouped result as values
     wsGrouped.Cells.Copy
     Set NewWB = Workbooks.Add(xlWBATWorksheet)
     
     With NewWB.Sheets(1)
-        .Range("A1").PasteSpecial Paste:=xlPasteValues
-        .Range("A1").PasteSpecial Paste:=xlPasteFormats
+        .Range("A1").PasteSpecial xlPasteValues
+        .Range("A1").PasteSpecial xlPasteFormats
         .Columns.AutoFit
     End With
     
     Application.CutCopyMode = False
     
-    ' === SAVE TO DESKTOP WITH DATE + TIME ===
+    ' Save to Desktop
     DesktopPath = CreateObject("WScript.Shell").SpecialFolders("Desktop") & "\"
     FileName = "Shipments_" & Format(Now, "yyyymmdd_hhmm") & ".xlsx"
     
     NewWB.SaveAs DesktopPath & FileName, FileFormat:=xlOpenXMLWorkbook
     NewWB.Close False
     
-    ' === RESET RAW DATA SHEET (clear below headers) ===
+    ' Reset raw data
     LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
     If LastRow > 2 Then
         wsRaw.Rows("3:" & LastRow).ClearContents
     End If
     
+CleanUp:
     Application.Calculation = xlCalculationAutomatic
     Application.ScreenUpdating = True
     
     MsgBox "✅ Done!" & vbCrLf & vbCrLf & _
-           "Clean file saved to your Desktop as:" & vbCrLf & _
-           FileName & vbCrLf & vbCrLf & _
-           "Template is ready for the next paste.", vbInformation, "Shipments Processed"
+           "File saved to Desktop as:" & vbCrLf & FileName & vbCrLf & vbCrLf & _
+           "Ready for next paste.", vbInformation, "Success"
 
 End Sub
