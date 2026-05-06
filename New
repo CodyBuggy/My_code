@@ -1,0 +1,16 @@
+' Reset raw data
+    LastRow = wsRaw.Cells(wsRaw.Rows.Count, "A").End(xlUp).Row
+    If LastRow > 2 Then
+        wsRaw.Rows("3:" & LastRow).ClearContents
+    End If
+
+CleanUp:
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    
+    MsgBox "✅ Done!" & vbCrLf & vbCrLf & _
+           "Clean file saved to Desktop as:" & vbCrLf & _
+           FileName & vbCrLf & vbCrLf & _
+           "Template is ready for the next paste.", vbInformation, "Success"
+
+End Sub
