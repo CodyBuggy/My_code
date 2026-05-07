@@ -1,0 +1,23 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+echo Starting rename operation...
+echo.
+
+for %%F in ("Mail from M3 *.pdf") do (
+    set "oldname=%%\~nF"
+    
+    :: Remove the prefix "Mail from M3 " to get just the number part
+    set "num=!oldname:Mail from M3 =!"
+    
+    if not "!num!"=="" (
+        ren "%%F" "DN !num!.pdf"
+        echo Renamed: %%F  --^>  DN !num!.pdf
+    ) else (
+        echo Skipped: %%F
+    )
+)
+
+echo.
+echo Rename completed!
+pause
