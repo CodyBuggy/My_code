@@ -1,0 +1,23 @@
+@echo off
+echo.
+echo Starting rename operation...
+echo ========================================
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+"Get-ChildItem -File | Where-Object { $_.Name -like 'Mail from M3 *.pdf' } | ForEach-Object {" ^
+"    $old = $_.Name;" ^
+"    $num = $_.BaseName -replace '^Mail from M3\s*', '';" ^
+"    if (\( num -match '^\d+ \)') {" ^
+"        $newName = 'DN ' + $num + '.pdf';" ^
+"        Rename-Item -LiteralPath $_.FullName -NewName $newName;" ^
+"        Write-Host ('Renamed: ' + $old + '  -->  ' + $newName) -ForegroundColor Green;" ^
+"    } else {" ^
+"        Write-Host ('Skipped (no number): ' + $old) -ForegroundColor Yellow;" ^
+"    }" ^
+"}"
+
+echo.
+echo ========================================
+echo Rename completed!
+echo.
+pause
