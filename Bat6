@@ -1,0 +1,24 @@
+@echo off
+echo.
+echo Starting rename operation for your Mail from M3 files...
+echo ========================================
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+"$files = Get-ChildItem -File -Filter 'Mail from M3 *.pdf'; " ^
+"if ($files.Count -eq 0) { Write-Host 'No matching files found!' -ForegroundColor Red; exit }; " ^
+"foreach ($file in $files) { " ^
+"    $num = $file.BaseName -replace '^Mail from M3\s*', ''; " ^
+"    if (\( num -match '^\d+ \)') { " ^
+"        $newName = 'DN ' + $num + '.pdf'; " ^
+"        Rename-Item -LiteralPath $file.FullName -NewName $newName; " ^
+"        Write-Host ('Renamed: ' + $file.Name + '  -->  ' + $newName) -ForegroundColor Green; " ^
+"    } else { " ^
+"        Write-Host ('Skipped: ' + $file.Name) -ForegroundColor Yellow; " ^
+"    } " ^
+"}"
+
+echo.
+echo ========================================
+echo All done!
+echo.
+pause
