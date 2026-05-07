@@ -1,0 +1,5 @@
+@echo off
+echo Files found in this folder matching the pattern:
+dir "Mail from M3 *.pdf"
+echo.
+pause
