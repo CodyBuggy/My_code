@@ -1,0 +1,15 @@
+@echo off
+echo Starting rename operation...
+
+powershell -NoProfile -Command ^
+"Get-ChildItem 'Mail from M3 *.pdf' | ForEach-Object {" ^
+"  $num = $_.BaseName -replace '^Mail from M3 ', '';" ^
+"  if ($num) {" ^
+"    Rename-Item $_.FullName -NewName ('DN ' + $num + '.pdf');" ^
+"    Write-Host ('Renamed: ' + $_.Name + '  -->  DN ' + $num + '.pdf')" ^
+"  }" ^
+"}"
+
+echo.
+echo Rename completed!
+pause
